@@ -1,0 +1,721 @@
+openapi: 3.0.3
+info:
+  title: API Gateway - Sistema de Entregas
+  description: |
+    API Gateway para sistema de entregas que integra serviços de:
+    - Autenticação de usuários
+    - Gerenciamento de pedidos
+    - Rastreamento de entregas
+  version: 1.0.0
+  contact:
+    name: Suporte API
+    email: suporte@empresa.com
+
+servers:
+  - url: http://localhost:50092
+    description: Servidor de desenvolvimento
+  - url: https://api.empresa.com
+    description: Servidor de produção
+
+tags:
+  - name: Auth
+    description: Autenticação e autorização de usuários
+  - name: Pedidos
+    description: Gerenciamento de pedidos
+  - name: Rastreamento
+    description: Rastreamento de entregas
+
+paths:
+  # === AUTENTICAÇÃO ===
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Realizar login
+      description: Autentica um usuário no sistema
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: "gabriel@gmail.com"
+              senha: "123456"
+      responses:
+        '200':
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              example:
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                usuario:
+                  id: 1
+                  nome: "Gabriel"
+                  email: "gabriel@gmail.com"
+                  tipo: 0
+        '401':
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Erro ao buscar informações de login"
+
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Registrar novo usuário
+      description: Cria uma nova conta de usuário no sistema
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              nome: "João Silva"
+              email: "joao@gmail.com"
+              senha: "senha123"
+              tipo: 0
+      responses:
+        '201':
+          description: Usuário criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Email já cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Erro ao buscar informações de registro"
+
+  # === PEDIDOS ===
+  /pedidos:
+    get:
+      tags:
+        - Pedidos
+      summary: Listar pedidos
+      description: Retorna lista de todos os pedidos
+      responses:
+        '200':
+          description: Lista de pedidos retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pedido'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Erro ao listar pedidos"
+
+    post:
+      tags:
+        - Pedidos
+      summary: Criar pedido
+      description: Cria um novo pedido no sistema
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PedidoRequest'
+            example:
+              nome: "Documento importante"
+              origem: "-23.5505,-46.6333"
+              destino: "-23.5489,-46.6388"
+              id_usuario: 1
+      responses:
+        '201':
+          description: Pedido criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Erro ao criar pedido"
+
+  /pedidos/{id}:
+    put:
+      tags:
+        - Pedidos
+      summary: Atualizar pedido
+      description: Atualiza as informações de um pedido existente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID do pedido
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PedidoUpdateRequest'
+            example:
+              nome: "Documento atualizado"
+              origem: "-23.5505,-46.6333"
+              destino: "-23.5489,-46.6388"
+              situacao: 2
+      responses:
+        '200':
+          description: Pedido atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+        '404':
+          description: Pedido não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Erro ao atualizar pedido"
+
+    delete:
+      tags:
+        - Pedidos
+      summary: Cancelar pedido
+      description: Cancela um pedido existente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID do pedido
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Pedido cancelado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+              example:
+                message: "Pedido cancelado com sucesso"
+        '404':
+          description: Pedido não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Erro ao cancelar pedido"
+
+  /pedidos/calcular-rota:
+    post:
+      tags:
+        - Pedidos
+      summary: Calcular rota
+      description: Calcula a melhor rota entre origem e destino
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RotaRequest'
+            example:
+              origem: "-23.5505,-46.6333"
+              destino: "-23.5489,-46.6388"
+      responses:
+        '200':
+          description: Rota calculada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RotaResponse'
+              example:
+                distancia: 1.2
+                tempo_estimado: 15
+                coordenadas:
+                  - [-23.5505, -46.6333]
+                  - [-23.5489, -46.6388]
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Erro ao calcular rota"
+
+  # === RASTREAMENTO ===
+  /rastreamento/atualizar:
+    post:
+      tags:
+        - Rastreamento
+      summary: Atualizar localização
+      description: Atualiza a localização atual de um pedido
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RastreamentoRequest'
+            example:
+              id_pedido: 1
+              latitude: -23.5505
+              longitude: -46.6333
+      responses:
+        '200':
+          description: Localização atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rastreamento'
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Pedido não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Erro ao atualizar localização"
+
+  /rastreamento/{pedidoId}:
+    get:
+      tags:
+        - Rastreamento
+      summary: Buscar localização do pedido
+      description: Retorna o histórico de localizações de um pedido específico
+      parameters:
+        - name: pedidoId
+          in: path
+          required: true
+          description: ID do pedido
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Localizações encontradas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Rastreamento'
+        '404':
+          description: Pedido não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Pedido não encontrado"
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Erro ao buscar localização"
+
+components:
+  schemas:
+    # === USUÁRIO ===
+    Usuario:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID único do usuário
+          example: 1
+        nome:
+          type: string
+          maxLength: 50
+          description: Nome completo do usuário
+          example: "Gabriel"
+        email:
+          type: string
+          maxLength: 100
+          format: email
+          description: Email do usuário
+          example: "gabriel@gmail.com"
+        tipo:
+          type: integer
+          description: Tipo do usuário (0 = Cliente, 1 = Entregador)
+          enum: [0, 1]
+          example: 0
+        data_criacao:
+          type: string
+          format: date-time
+          description: Data de criação da conta
+          example: "2025-06-11T12:00:00Z"
+      required:
+        - id
+        - nome
+        - email
+        - tipo
+        - data_criacao
+
+    # === PEDIDO ===
+    Pedido:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID único do pedido
+          example: 1
+        nome:
+          type: string
+          maxLength: 50
+          description: Nome/descrição do pedido
+          example: "Rifle .50"
+        origem:
+          type: string
+          maxLength: 200
+          description: Coordenadas de origem (formato latitude,longitude)
+          example: "-23.5505,-46.6333"
+        destino:
+          type: string
+          maxLength: 200
+          description: Coordenadas de destino (formato latitude,longitude)
+          example: "-23.5489,-46.6388"
+        situacao:
+          type: integer
+          description: Situação do pedido (1 = Pendente, 2 = Em trânsito, 3 = Entregue, 4 = Cancelado)
+          enum: [1, 2, 3, 4]
+          example: 1
+        data_criacao:
+          type: string
+          format: date-time
+          description: Data de criação do pedido
+          example: "2025-06-11T12:00:00Z"
+        id_usuario:
+          type: integer
+          description: ID do usuário que criou o pedido
+          example: 1
+      required:
+        - id
+        - nome
+        - origem
+        - destino
+        - situacao
+        - data_criacao
+        - id_usuario
+
+    # === RASTREAMENTO ===
+    Rastreamento:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID único do registro de rastreamento
+          example: 1
+        id_pedido:
+          type: integer
+          description: ID do pedido sendo rastreado
+          example: 1
+        latitude:
+          type: number
+          format: double
+          description: Latitude da localização
+          example: -23.5505
+        longitude:
+          type: number
+          format: double
+          description: Longitude da localização
+          example: -46.6333
+        timestamp:
+          type: string
+          format: date-time
+          description: Data e hora da localização
+          example: "2025-06-11T12:00:00Z"
+      required:
+        - id
+        - id_pedido
+        - latitude
+        - longitude
+        - timestamp
+
+    # === REQUESTS ===
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email do usuário
+          example: "gabriel@gmail.com"
+        senha:
+          type: string
+          description: Senha do usuário
+          example: "123456"
+      required:
+        - email
+        - senha
+
+    RegisterRequest:
+      type: object
+      properties:
+        nome:
+          type: string
+          maxLength: 50
+          description: Nome completo do usuário
+          example: "João Silva"
+        email:
+          type: string
+          maxLength: 100
+          format: email
+          description: Email do usuário
+          example: "joao@gmail.com"
+        senha:
+          type: string
+          maxLength: 100
+          description: Senha do usuário
+          example: "senha123"
+        tipo:
+          type: integer
+          description: Tipo do usuário (0 = Cliente, 1 = Entregador)
+          enum: [0, 1]
+          default: 0
+          example: 0
+      required:
+        - nome
+        - email
+        - senha
+
+    PedidoRequest:
+      type: object
+      properties:
+        nome:
+          type: string
+          maxLength: 50
+          description: Nome/descrição do pedido
+          example: "Documento importante"
+        origem:
+          type: string
+          maxLength: 200
+          description: Coordenadas de origem (formato latitude,longitude)
+          example: "-23.5505,-46.6333"
+        destino:
+          type: string
+          maxLength: 200
+          description: Coordenadas de destino (formato latitude,longitude)
+          example: "-23.5489,-46.6388"
+        id_usuario:
+          type: integer
+          description: ID do usuário que está criando o pedido
+          example: 1
+      required:
+        - nome
+        - origem
+        - destino
+        - id_usuario
+
+    PedidoUpdateRequest:
+      type: object
+      properties:
+        nome:
+          type: string
+          maxLength: 50
+          description: Nome/descrição do pedido
+          example: "Documento atualizado"
+        origem:
+          type: string
+          maxLength: 200
+          description: Coordenadas de origem (formato latitude,longitude)
+          example: "-23.5505,-46.6333"
+        destino:
+          type: string
+          maxLength: 200
+          description: Coordenadas de destino (formato latitude,longitude)
+          example: "-23.5489,-46.6388"
+        situacao:
+          type: integer
+          description: Situação do pedido (1 = Pendente, 2 = Em trânsito, 3 = Entregue, 4 = Cancelado)
+          enum: [1, 2, 3, 4]
+          example: 2
+
+    RastreamentoRequest:
+      type: object
+      properties:
+        id_pedido:
+          type: integer
+          description: ID do pedido sendo rastreado
+          example: 1
+        latitude:
+          type: number
+          format: double
+          description: Latitude da localização atual
+          example: -23.5505
+        longitude:
+          type: number
+          format: double
+          description: Longitude da localização atual
+          example: -46.6333
+      required:
+        - id_pedido
+        - latitude
+        - longitude
+
+    RotaRequest:
+      type: object
+      properties:
+        origem:
+          type: string
+          description: Coordenadas de origem (formato latitude,longitude)
+          example: "-23.5505,-46.6333"
+        destino:
+          type: string
+          description: Coordenadas de destino (formato latitude,longitude)
+          example: "-23.5489,-46.6388"
+      required:
+        - origem
+        - destino
+
+    # === RESPONSES ===
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Token JWT para autenticação
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        usuario:
+          $ref: '#/components/schemas/Usuario'
+      required:
+        - token
+        - usuario
+
+    RotaResponse:
+      type: object
+      properties:
+        distancia:
+          type: number
+          format: double
+          description: Distância total da rota em km
+          example: 1.2
+        tempo_estimado:
+          type: integer
+          description: Tempo estimado da rota em minutos
+          example: 15
+        coordenadas:
+          type: array
+          items:
+            type: array
+            items:
+              type: number
+              format: double
+            minItems: 2
+            maxItems: 2
+          description: Array de coordenadas [latitude, longitude] da rota
+          example: [[-23.5505, -46.6333], [-23.5489, -46.6388]]
+      required:
+        - distancia
+        - tempo_estimado
+        - coordenadas
+
+    # === COMMON ===
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Mensagem de erro
+          example: "Erro interno do servidor"
+      required:
+        - error
+
+    SuccessMessage:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Mensagem de sucesso
+          example: "Operação realizada com sucesso"
+      required:
+        - message
+
+  # === SECURITY ===
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT obtido através do endpoint de login
+
+# Aplicar autenticação JWT a endpoints protegidos (opcional)
+# security:
+#   - BearerAuth: []

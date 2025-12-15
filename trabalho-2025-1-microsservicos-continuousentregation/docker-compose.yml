@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: continuous_integration_postgres
+    environment:
+      POSTGRES_DB: rastreamento
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rastreamento-service:
+    build:
+      context: ./rastreamento-service
+    container_name: rastreamento_service
+    ports:
+      - "50051:50051"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: rastreamento
+
+  
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: auth_service
+    ports:
+      - "50052:50052"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: rastreamento
+
+  pedido-service:
+    build:
+      context: ./pedido-service
+    container_name: pedido_service
+    ports:
+      - "50061:50061"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: rastreamento
+
+  gateway:
+      build:
+        context: ./gateway
+      container_name: api_gateway
+      ports:
+        - "50092:50092"
+      depends_on:
+        postgres:
+          condition: service_healthy
+      environment:
+        PGHOST: postgres
+        PGPORT: 5432
+        PGUSER: postgres
+        PGPASSWORD: postgres
+        PGDATABASE: rastreamento
+volumes:
+  pgdata:
